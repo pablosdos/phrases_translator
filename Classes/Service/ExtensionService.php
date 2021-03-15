@@ -18,19 +18,26 @@ namespace EBT\ExtensionBuilder\Service;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
-use TYPO3\CMS\Core\Utility\StringUtility;
 
 class ExtensionService
 {
+    const COMPOSER_PATH_WARNING = "You are running TYPO3 in composer mode. You have to configure at
+        least one local path repository in your composer.json if you want to create an extension with
+        ExtensionBuilder.<br /> See <a style='text-decoration: underline' target='_blank'
+        href='https://docs.typo3.org/p/friendsoftypo3/extension-builder/master/en-us/User/Index.html'>
+        Documentation
+        </a>";
+
     /**
      * @return string[]
      */
     public function resolveStoragePaths(): array
     {
-        $storagePaths = array_merge(
-            [Environment::getExtensionsPath()],
-            $this->resolveComposerStoragePaths()
-        );
+        if (Environment::isComposerMode()) {
+            $storagePaths = $this->resolveComposerStoragePaths();
+        } else {
+            $storagePaths = [Environment::getExtensionsPath()];
+        }
 
         return array_map(
             function (string $storagePath) {
@@ -45,7 +52,7 @@ class ExtensionService
      */
     public function resolveComposerStoragePaths(): array
     {
-        if (!defined('TYPO3_COMPOSER_MODE') || !TYPO3_COMPOSER_MODE) {
+        if (!Environment::isComposerMode()) {
             return [];
         }
 
@@ -79,4 +86,10 @@ class ExtensionService
         }
         return false;
     }
+
+    public function isStoragePathConfigured(): bool
+    {
+        return !Environment::isComposerMode() || count($this->resolveStoragePaths()) > 0;
+    }
+
 }

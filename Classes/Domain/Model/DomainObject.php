@@ -96,12 +96,6 @@ class DomainObject
      */
     protected $actions = [];
     /**
-     * Is an upload folder required for this domain object?
-     *
-     * @var bool
-     */
-    protected $needsUploadFolder = false;
-    /**
      * @var string
      */
     protected $mapToTable = '';
@@ -274,9 +268,6 @@ class DomainObject
     public function addProperty(DomainObject\AbstractProperty $property)
     {
         $property->setDomainObject($this);
-        if ($property->getNeedsUploadFolder()) {
-            $this->needsUploadFolder = true;
-        }
         $this->properties[] = $property;
     }
 
@@ -504,26 +495,26 @@ class DomainObject
     }
 
     /**
-     * @return array
+     * @return bool
      */
-    public function hasPropertiesThatNeedMappingStatements()
+    public function getHasPropertiesWithMappingStatements()
     {
-        $propertiesWithMappingStatements = [];
-        foreach ($this->properties as $property) {
-            if ($property->getMappingStatement()) {
-                $propertiesWithMappingStatements[] = $property;
-            }
-        }
-        return $propertiesWithMappingStatements;
+        return count($this->getPropertiesThatNeedMappingStatements()) > 0;
     }
 
     /**
-     * @return bool
-     */
-    public function getNeedsUploadFolder()
-    {
-        return $this->needsUploadFolder;
-    }
+    * @return array
+    */
+   public function getPropertiesThatNeedMappingStatements()
+   {
+       $propertiesWithMappingStatements = [];
+       foreach ($this->properties as $property) {
+           if ($property->getMappingStatement()) {
+               $propertiesWithMappingStatements[] = $property;
+           }
+       }
+       return $propertiesWithMappingStatements;
+   }
 
     /**
      * @return bool
@@ -561,7 +552,7 @@ class DomainObject
             return true;
         }
 
-        return $this->hasPropertiesThatNeedMappingStatements();
+        return $this->getHasPropertiesWithMappingStatements();
     }
 
     /**

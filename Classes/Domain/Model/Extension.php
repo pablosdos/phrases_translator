@@ -105,12 +105,6 @@ class Extension
      */
     protected $state = 0;
     /**
-     * Is an upload folder required for this extension
-     *
-     * @var bool
-     */
-    protected $needsUploadFolder = false;
-    /**
      * an array keeping all md5 hashes of all files in the extension to detect modifications
      *
      * @var string[]
@@ -477,9 +471,6 @@ class Extension
                 );
             }
         }
-        if ($domainObject->getNeedsUploadFolder()) {
-            $this->needsUploadFolder = true;
-        }
         $this->domainObjects[$domainObject->getName()] = $domainObject;
     }
 
@@ -754,24 +745,6 @@ class Extension
     }
 
     /**
-     * Getter for $needsUploadFolder
-     *
-     * @return bool $needsUploadFolder
-     */
-    public function getNeedsUploadFolder(): bool
-    {
-        return $this->needsUploadFolder;
-    }
-
-    /**
-     * @return string $uploadFolder
-     */
-    public function getUploadFolder(): string
-    {
-        return 'uploads/' . $this->getShortExtensionKey();
-    }
-
-    /**
      * @return string
      */
     public function getCategory(): ?string
@@ -903,7 +876,7 @@ class Extension
             'description' => $this->description,
             'authors' => [],
             'require' => [
-                'typo3/cms-core' => '^9.5'
+                'typo3/cms-core' => '^10.4'
             ],
             'autoload' => [
                 'psr-4' => [
@@ -917,6 +890,11 @@ class Extension
             ],
             'replace' => [
                 'typo3-ter/' . $composerExtensionKey => 'self.version'
+            ],
+            'extra' => [
+                'typo3/cms' => [
+                    'extension-key' => $this->extensionKey
+                ]
             ]
         ];
         foreach ($this->persons as $person) {

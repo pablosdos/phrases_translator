@@ -66,13 +66,6 @@ abstract class AbstractProperty
     protected $value;
 
     /**
-     * Is an upload folder required for this property
-     *
-     * @var bool
-     */
-    protected $needsUploadFolder = false;
-
-    /**
      * The domain object this property belongs to.
      *
      * @var \EBT\ExtensionBuilder\Domain\Model\DomainObject
@@ -479,20 +472,10 @@ abstract class AbstractProperty
     public function getMappingStatement(): ?string
     {
         if ($this->getFieldName() != GeneralUtility::camelCaseToLowerCaseUnderscored($this->name)) {
-            return $this->getFieldName() . '.mapOnProperty = ' . $this->name;
+            return $statement = "'" . $this->name . "' => [\n\t'fieldName' => '". $this->getFieldName() . "'\n],";
         }
 
         return null;
-    }
-
-    /**
-     * Getter for $needsUploadFolder
-     *
-     * @return bool $needsUploadFolder
-     */
-    public function getNeedsUploadFolder(): bool
-    {
-        return $this->needsUploadFolder;
     }
 
     /**

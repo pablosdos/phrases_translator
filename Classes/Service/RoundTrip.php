@@ -21,6 +21,7 @@ use EBT\ExtensionBuilder\Domain\Model\DomainObject\Relation\AbstractRelation;
 use EBT\ExtensionBuilder\Utility\Inflector;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -35,6 +36,13 @@ class RoundTrip implements SingletonInterface
      * @var string
      */
     const SPLIT_TOKEN = '## EXTENSION BUILDER DEFAULTS END TOKEN - Everything BEFORE this line is overwritten with the defaults of the extension builder';
+
+    const OVERWRITE_SETTINGS_SKIP = -1;
+
+    const OVERWRITE_SETTINGS_MERGE = 1;
+
+    const OVERWRITE_SETTINGS_KEEP = 2;
+
     /**
      * @var \EBT\ExtensionBuilder\Domain\Model\Extension
      */
@@ -279,9 +287,9 @@ class RoundTrip implements SingletonInterface
                 } elseif (!empty($oldParentClass)) {
                     // the old object had a parent class setting, but it's removed now
                     if ($currentDomainObject->isEntity()) {
-                        $parentClass = $this->configurationManager->getParentClassForEntityObject($this->extension->getExtensionKey());
+                        $parentClass = $this->configurationManager->getParentClassForEntityObject($this->extension);
                     } else {
-                        $parentClass = $this->configurationManager->getParentClassForValueObject($this->extension->getExtensionKey());
+                        $parentClass = $this->configurationManager->getParentClassForValueObject($this->extension);
                     }
                     $this->classObject->setParentClassName($parentClass);
                 }
@@ -289,12 +297,12 @@ class RoundTrip implements SingletonInterface
                 if ($currentDomainObject->isEntity() && !$oldDomainObject->isEntity()) {
                     // the object type was changed in the modeler
                     $this->classObject->setParentClassName(
-                        $this->configurationManager->getParentClassForEntityObject($this->extension->getExtensionKey())
+                        $this->configurationManager->getParentClassForEntityObject($this->extension)
                     );
                 } elseif (!$currentDomainObject->isEntity() && $oldDomainObject->isEntity()) {
                     // the object type was changed in the modeler
                     $this->classObject->setParentClassName(
-                        $this->configurationManager->getParentClassForValueObject($this->extension->getExtensionKey())
+                        $this->configurationManager->getParentClassForValueObject($this->extension)
                     );
                 }
                 $this->classFileObject->setClasses([$this->classObject]);
@@ -1020,7 +1028,7 @@ class RoundTrip implements SingletonInterface
      */
     public static function getExtConfiguration(): array
     {
-        return unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['extension_builder']);
+        return GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('extension_builder');
     }
 
     /**
@@ -1040,9 +1048,9 @@ class RoundTrip implements SingletonInterface
     public static function getOverWriteSettingForPath($path, $extension)
     {
         $map = [
-            'skip' => -1,
-            'merge' => 1,
-            'keep' => 2
+            'skip' => self::OVERWRITE_SETTINGS_SKIP,
+            'merge' => self::OVERWRITE_SETTINGS_MERGE,
+            'keep' => self::OVERWRITE_SETTINGS_KEEP,
         ];
 
         $settings = $extension->getSettings();
@@ -1139,7 +1147,7 @@ class RoundTrip implements SingletonInterface
                 if (!empty($customFileContent)) {
                     $overrideDir = $tcaDir . 'Overrides/';
                     if (!is_dir($overrideDir)) {
-                        GeneralUtility::mkdir_deep($tcaDir, 'Overrides');
+                        GeneralUtility::mkdir_deep($tcaDir . 'Overrides');
                     }
                     $success = GeneralUtility::writeFile(
                         $overrideDir . $domainObject->getDatabaseTableName() . '.php',
@@ -1177,7 +1185,7 @@ class RoundTrip implements SingletonInterface
                 throw new \Exception('Backup directory is not an allowed absolute path: ' . $backupDir);
             }
         } else {
-            $backupDir = Environment::getPublicPath() . '/' . $backupDir;
+            $backupDir = Environment::getProjectPath() . '/' . $backupDir;
         }
         if (strrpos($backupDir, '/') < strlen($backupDir) - 1) {
             $backupDir .= '/';

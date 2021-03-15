@@ -106,22 +106,21 @@ class NodeFactory implements SingletonInterface
     }
 
     /**
-     * @param \EBT\ExtensionBuilder\Domain\Model\File $fileObject
+     * @param File $fileObject
      * @return array
      */
     public function getFileStatements(File $fileObject)
     {
+        if (!$fileObject->hasNamespaces()) {
+            return $this->getContainerStatements($fileObject);
+        }
         $stmts = [];
-        if ($fileObject->hasNamespaces()) {
-            foreach ($fileObject->getNamespaces() as $namespace) {
-                $stmts[] = $this->buildNamespaceNode($namespace);
-                foreach ($namespace->getAliasDeclarations() as $aliasDeclaration) {
-                    $stmts[] = $this->buildUseStatementNode($aliasDeclaration['name'], $aliasDeclaration['alias']);
-                }
-                $stmts = array_merge($stmts, $this->getContainerStatements($namespace));
+        foreach ($fileObject->getNamespaces() as $namespace) {
+            $stmts[] = $this->buildNamespaceNode($namespace);
+            foreach ($namespace->getAliasDeclarations() as $aliasDeclaration) {
+                $stmts[] = $this->buildUseStatementNode($aliasDeclaration['name'], $aliasDeclaration['alias']);
             }
-        } else {
-            $stmts = array_merge($stmts, $this->getContainerStatements($fileObject));
+            $stmts = array_merge($stmts, $this->getContainerStatements($namespace));
         }
         return $stmts;
     }

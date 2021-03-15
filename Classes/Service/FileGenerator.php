@@ -33,12 +33,12 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
 class FileGenerator
 {
     /**
-     * @var \EBT\ExtensionBuilder\Service\ClassBuilder
+     * @var ClassBuilder
      */
     protected $classBuilder;
 
     /**
-     * @param \EBT\ExtensionBuilder\Service\ClassBuilder $classBuilder
+     * @param ClassBuilder $classBuilder
      * @return void
      */
     public function injectClassBuilder(ClassBuilder $classBuilder)
@@ -47,12 +47,12 @@ class FileGenerator
     }
 
     /**
-     * @var \EBT\ExtensionBuilder\Service\RoundTrip
+     * @var RoundTrip
      */
     protected $roundTripService;
 
     /**
-     * @param \EBT\ExtensionBuilder\Service\RoundTrip $roundTripService
+     * @param RoundTrip $roundTripService
      * @return void
      */
     public function injectRoundTripService (RoundTrip $roundTripService)
@@ -129,6 +129,7 @@ class FileGenerator
         'showAction',
         'updateAction'
     ];
+
     /**
      * all file types where a split token makes sense
      *
@@ -141,6 +142,7 @@ class FileGenerator
         'ts', // Typoscript
         'typoscript', // Typoscript
     ];
+
     /**
      * A map of deprecated file extensions
      * @var string[][]
@@ -150,16 +152,16 @@ class FileGenerator
     ];
 
     /**
-     * @var \EBT\ExtensionBuilder\Service\LocalizationService
+     * @var LocalizationService
      *
      */
     protected $localizationService;
 
     /**
-     * @param \EBT\ExtensionBuilder\Service\LocalizationService $localizationService
+     * @param LocalizationService $localizationService
      * @return void
      */
-    public function injectLocalizationService (LocalizationService $localizationService)
+    public function injectLocalizationService(LocalizationService $localizationService): void
     {
         $this->localizationService = $localizationService;
     }
@@ -184,7 +186,9 @@ class FileGenerator
     public function build(Extension $extension)
     {
         $this->extension = $extension;
-        if ($this->settings['extConf']['enableRoundtrip'] == 1) {
+        $enableRoundtrip = (bool)GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('extension_builder', 'enableRoundtrip');
+
+        if ($enableRoundtrip === true) {
             $this->roundTripEnabled = true;
             $this->roundTripService->initialize($extension);
         }
@@ -212,11 +216,11 @@ class FileGenerator
 
         $this->generateComposerJson();
 
-        GeneralUtility::mkdir_deep($this->extensionDirectory, 'Configuration');
+        GeneralUtility::mkdir_deep($this->extensionDirectory . 'Configuration');
 
         $this->configurationDirectory = $this->extensionDirectory . 'Configuration/';
 
-        GeneralUtility::mkdir_deep($this->extensionDirectory, 'Resources/Private');
+        GeneralUtility::mkdir_deep($this->extensionDirectory . 'Resources/Private');
 
         $this->privateResourcesDirectory = $this->extensionDirectory . 'Resources/Private/';
 
@@ -229,6 +233,8 @@ class FileGenerator
         $this->copyStaticFiles();
 
         $this->generateTCAFiles();
+
+        $this->generateExtbaseConfigClass();
 
         $this->generateTyposcriptFiles();
 
@@ -296,27 +302,6 @@ class FileGenerator
             } catch (\Exception $e) {
                 throw new \Exception('Could not write ext_localconf.php. Error: ' . $e->getMessage());
             }
-            $currentPluginKey = '';
-            try {
-                foreach ($this->extension->getPlugins() as $plugin) {
-                    /** @var \EBT\ExtensionBuilder\Domain\Model\Plugin $plugin */
-                    if ($plugin->getSwitchableControllerActions()) {
-                        if (!is_dir($this->extensionDirectory . 'Configuration/FlexForms')) {
-                            $this->mkdir_deep($this->extensionDirectory, 'Configuration/FlexForms');
-                        }
-                        $currentPluginKey = $plugin->getKey();
-                        $fileContents = $this->renderTemplate('Configuration/Flexforms/flexform.xmlt', [
-                            'plugin' => $plugin
-                        ]);
-                        $this->writeFile(
-                            $this->extensionDirectory . 'Configuration/FlexForms/flexform_' . $currentPluginKey . '.xml',
-                            $fileContents
-                        );
-                    }
-                }
-            } catch (\Exception $e) {
-                throw new \Exception('Could not write  flexform_' . $currentPluginKey . '.xml. Error: ' . $e->getMessage());
-            }
         }
     }
 
@@ -327,7 +312,7 @@ class FileGenerator
     {
         // Generate TCA
         try {
-            GeneralUtility::mkdir_deep($this->extensionDirectory, 'Configuration/TCA');
+            GeneralUtility::mkdir_deep($this->extensionDirectory . 'Configuration/TCA');
 
             $domainObjects = $this->extension->getDomainObjects();
 
@@ -351,7 +336,7 @@ class FileGenerator
                 }
             }
             if (count($domainObjectsNeedingOverrides) > 0) {
-                GeneralUtility::mkdir_deep($this->extensionDirectory, 'Configuration/TCA/Overrides');
+                GeneralUtility::mkdir_deep($this->extensionDirectory . 'Configuration/TCA/Overrides');
             }
             $tablesNeedingTypeFields = $this->extension->getTablesForTypeFieldDefinitions();
             foreach ($domainObjectsNeedingOverrides as $tableName => $domainObjects) {
@@ -374,7 +359,7 @@ class FileGenerator
     {
         // Generate locallang*.xlf files
         try {
-            GeneralUtility::mkdir_deep($this->privateResourcesDirectory, 'Language');
+            GeneralUtility::mkdir_deep($this->privateResourcesDirectory . 'Language');
             $this->languageDirectory = $this->privateResourcesDirectory . 'Language/';
             $fileContents = $this->generateLocallangFileContent();
             $this->writeFile($this->languageDirectory . 'locallang.xlf', $fileContents);
@@ -539,16 +524,16 @@ class FileGenerator
             } catch (\Exception $e) {
                 throw new \Exception('Could not generate typoscript constants, error: ' . $e->getMessage());
             }
-        }
 
-        // Generate Static TypoScript
-        try {
-            if ($this->extension->getDomainObjectsThatNeedMappingStatements()) {
-                $fileContents = $this->generateStaticTyposcript();
-                $this->writeFile($this->extensionDirectory . 'ext_typoscript_setup.typoscript', $fileContents);
+            // Generate Static TypoScript
+            try {
+                if ($this->extension->getDomainObjectsThatNeedMappingStatements()) {
+                    $fileContents = $this->generateStaticTyposcript();
+                    $this->writeFile($this->extensionDirectory . 'ext_typoscript_setup.typoscript', $fileContents);
+                }
+            } catch (\Exception $e) {
+                throw new \Exception('Could not generate static typoscript, error: ' . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            throw new \Exception('Could not generate static typoscript, error: ' . $e->getMessage());
         }
     }
 
@@ -836,7 +821,7 @@ class FileGenerator
         // returns a class object if an existing class was found
         if ($controllerClassFileObject) {
             $this->addLicenseHeader($controllerClassFileObject->getFirstClass());
-            return $this->printerService->renderFileObject($controllerClassFileObject, true);
+            return $this->writeClassFile($controllerClassFileObject);
         }
 
         throw new \Exception('Class file for controller could not be generated');
@@ -864,26 +849,10 @@ class FileGenerator
             $modelTemplateClassPath, $existingClassFileObject);
         if ($modelClassFileObject) {
             $this->addLicenseHeader($modelClassFileObject->getFirstClass());
-            return $this->printerService->renderFileObject($modelClassFileObject, true);
+            return $this->writeClassFile($modelClassFileObject);
         }
 
         throw new \Exception('Class file for domain object could not be generated');
-    }
-
-    /**
-     * @param \EBT\ExtensionBuilder\Domain\Model\ClassObject\ClassObject $classObject
-     *
-     * @return string
-     * @throws \Exception
-     */
-    protected function renderClassFile($classObject)
-    {
-        $nameSpace = new NamespaceObject($classObject->getNamespaceName());
-        $this->addLicenseHeader($classObject);
-        $nameSpace->addClass($classObject);
-        $classFile = new File;
-        $classFile->addNamespace($nameSpace);
-        return $this->printerService->renderFileObject($classFile, true);
     }
 
     /**
@@ -910,7 +879,7 @@ class FileGenerator
         );
         if ($repositoryClassFileObject) {
             $this->addLicenseHeader($repositoryClassFileObject->getFirstClass());
-            return $this->printerService->renderFileObject($repositoryClassFileObject, true);
+            return $this->writeClassFile($repositoryClassFileObject);
         }
 
         throw new \Exception('Class file for repository could not be generated');
@@ -926,7 +895,7 @@ class FileGenerator
      */
     public function generateDomainModelTests(DomainObject $domainObject)
     {
-        return $this->renderTemplate('Tests/DomainModelTest.phpt', [
+        return $this->renderTemplate('Tests/Unit/DomainModelTest.phpt', [
             'extension' => $this->extension,
             'domainObject' => $domainObject
         ]);
@@ -943,11 +912,28 @@ class FileGenerator
      */
     public function generateControllerTests($controllerName, DomainObject $domainObject)
     {
-        return $this->renderTemplate('Tests/ControllerTest.phpt', [
+        return $this->renderTemplate('Tests/Unit/ControllerTest.phpt', [
             'extension' => $this->extension,
             'controllerName' => $controllerName,
             'domainObject' => $domainObject
         ]);
+    }
+
+    public function generateExtbaseConfigClass()
+    {
+        try {
+           if ($this->extension->getDomainObjectsThatNeedMappingStatements()) {
+               if (!is_dir($this->configurationDirectory . 'Extbase/Persistence/')) {
+                   mkdir($this->configurationDirectory . 'Extbase/Persistence/', 0775, true);
+               }
+               $fileContents = $this->renderTemplate('Configuration/Extbase/Persistence/Classes.phpt', [
+                   'extension' => $this->extension
+               ]);
+               $this->writeFile($this->configurationDirectory . 'Extbase/Persistence/Classes.php', $fileContents);
+           }
+        } catch (\Exception $e) {
+           throw new \Exception('Could not generate Extbase Persistence Class Configuration, error: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -1025,9 +1011,12 @@ class FileGenerator
         $comments = $classObject->getComments();
         $needsLicenseHeader = true;
         foreach ($comments as $comment) {
-            if (strpos($comment, 'license information') !== false) {
+            if (strpos($comment, 'license') !== false) {
                 $needsLicenseHeader = false;
             }
+        }
+        if (strpos($classObject->getDescription(), 'license') !== false) {
+           $needsLicenseHeader = false;
         }
         $extensionSettings = $this->extension->getSettings();
         if ($needsLicenseHeader && empty($extensionSettings['skipDocComment'])) {
@@ -1255,36 +1244,6 @@ class FileGenerator
     }
 
     /**
-     * @param \EBT\ExtensionBuilder\Domain\Model\DomainObject $domainObject
-     * @param \EBT\ExtensionBuilder\Domain\Model\DomainObject\AbstractProperty $domainProperty
-     * @param string $classType
-     * @param string $methodType (used for add, get set etc.)
-     * @param string $methodName (used for concrete methods like createAction, initialze etc.)
-     *
-     * @return string method body
-     * @throws \Exception
-     */
-    public function getDefaultMethodBody($domainObject, $domainProperty, $classType, $methodType, $methodName)
-    {
-        if ($classType == 'Controller' && !in_array($methodName, self::$defaultActions)) {
-            return '';
-        }
-        if (!empty($methodType) && empty($methodName)) {
-            $methodName = $methodType;
-        }
-
-        return $this->renderTemplate(
-            'Partials/Classes/' . $classType . '/Methods/' . $methodName . 'MethodBody.phpt',
-            [
-                'domainObject' => $domainObject,
-                'property' => $domainProperty,
-                'extension' => $this->extension,
-                'settings' => $this->settings
-            ]
-        );
-    }
-
-    /**
      * @param string $extensionDirectory
      * @param string $classType
      * @param bool $createDirIfNotExist
@@ -1310,7 +1269,7 @@ class FileGenerator
         }
         if (!empty($classPath)) {
             if (!is_dir($extensionDirectory . $classPath) && $createDirIfNotExist) {
-                GeneralUtility::mkdir_deep($extensionDirectory, $classPath);
+                GeneralUtility::mkdir_deep($extensionDirectory . $classPath);
             }
             if (!is_dir($extensionDirectory . $classPath) && $createDirIfNotExist) {
                 throw new \Exception('folder could not be created:' . $extensionDirectory . $classPath);
@@ -1319,6 +1278,20 @@ class FileGenerator
         }
 
         throw new \Exception('Unexpected classPath:' . $classPath);
+    }
+
+    /**
+     * passes the declareStrictTypes flag from settings
+     * as argument to printer Service
+     *
+     * @param $classFileObject
+     * @return string
+     */
+    protected function writeClassFile($classFileObject)
+    {
+        $extensionSettings = $this->extension->getSettings();
+        $declareStrictTypes = isset($extensionSettings['declareStrictTypes']) ? $extensionSettings['declareStrictTypes'] : true;
+        return $this->printerService->renderFileObject($classFileObject, $declareStrictTypes);
     }
 
     /**
@@ -1339,7 +1312,7 @@ class FileGenerator
                 $targetFile,
                 $this->extension
             );
-            if ($overWriteMode == -1) {
+            if ($overWriteMode == RoundTrip::OVERWRITE_SETTINGS_SKIP) {
                 // skip file creation
                 return;
             }
@@ -1360,7 +1333,7 @@ class FileGenerator
                 }
             }
 
-            if ($overWriteMode == 1 && strpos($targetFile, 'Classes') === false) {
+            if ($overWriteMode == RoundTrip::OVERWRITE_SETTINGS_MERGE && strpos($targetFile, 'Classes') === false) {
                 // classes are merged by the class builder
                 if ($fileExtension == 'html') {
                     //TODO: We need some kind of protocol to be displayed after code generation
@@ -1370,7 +1343,7 @@ class FileGenerator
                 if (in_array($fileExtension, $this->filesSupportingSplitToken)) {
                     $fileContents = $this->insertSplitToken($targetFile, $fileContents);
                 }
-            } elseif (file_exists($targetFile) && $overWriteMode == 2) {
+            } elseif (file_exists($targetFile) && $overWriteMode == RoundTrip::OVERWRITE_SETTINGS_KEEP) {
                 // keep the existing file
                 return;
             }
@@ -1465,7 +1438,7 @@ class FileGenerator
     protected function mkdir_deep($directory, $deepDirectory)
     {
         if (!$this->roundTripEnabled) {
-            GeneralUtility::mkdir_deep($directory, $deepDirectory);
+            GeneralUtility::mkdir_deep($directory . $deepDirectory);
         } else {
             $subDirectories = explode('/', $deepDirectory);
             $tmpBasePath = $directory;
@@ -1480,7 +1453,7 @@ class FileGenerator
                     return;
                 }
                 if (!is_dir($deepDirectory) || ($this->roundTripEnabled && $overWriteMode < 2)) {
-                    GeneralUtility::mkdir_deep($tmpBasePath, $subDirectory);
+                    GeneralUtility::mkdir_deep($tmpBasePath . $subDirectory);
                 }
                 $tmpBasePath .= $subDirectory . '/';
             }

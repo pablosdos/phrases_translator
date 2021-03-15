@@ -191,11 +191,17 @@ class BuilderModuleController extends ActionController
      */
     public function domainmodellingAction(): void
     {
-        $this->view->assign('extPath',
-            PathUtility::stripPathSitePrefix(ExtensionManagementUtility::extPath('extension_builder')));
-        $this->view->assign('settings', $this->extensionBuilderConfigurationManager->getSettings());
-        $this->view->assign('currentAction', $this->request->getControllerActionName());
-        $this->view->assign('storagePaths', $this->extensionService->resolveStoragePaths());
+        $initialWarnings = [];
+        if (!$this->extensionService->isStoragePathConfigured()) {
+            $initialWarnings[] = $this->extensionService::COMPOSER_PATH_WARNING;
+        }
+        $this->view->assignMultiple([
+            'extPath' => PathUtility::stripPathSitePrefix(ExtensionManagementUtility::extPath('extension_builder')),
+            'settings' => $this->extensionBuilderConfigurationManager->getSettings(),
+            'currentAction' => $this->request->getControllerActionName(),
+            'storagePaths' => $this->extensionService->resolveStoragePaths(),
+            'initialWarnings' => $initialWarnings
+        ]);
         $this->getBackendUserAuthentication()->pushModuleData('extensionbuilder', ['firstTime' => 0]);
     }
 
@@ -301,7 +307,7 @@ class BuilderModuleController extends ActionController
                     throw $e;
                 }
             }
-            $extensionSettings = $this->extensionBuilderConfigurationManager->getExtensionSettings($extension->getExtensionKey());
+            $extensionSettings = $this->extensionBuilderConfigurationManager->getExtensionSettings($extension->getExtensionKey(), $extension->getStoragePath());
             if ($this->extensionBuilderSettings['extConf']['enableRoundtrip'] === '1') {
                 if (empty($extensionSettings)) {
                     // no config file in an existing extension!
@@ -336,9 +342,6 @@ class BuilderModuleController extends ActionController
             $this->extensionInstallationStatus->setExtension($extension);
             $this->extensionInstallationStatus->setUsesComposerPath($usesComposerPath);
             $message = '<p>The Extension was saved</p>' . $this->extensionInstallationStatus->getStatusMessage();
-            if ($extension->getNeedsUploadFolder()) {
-                $message .= '<br />Notice: File upload is not yet implemented.';
-            }
             $result = ['success' => $message, 'usesComposerPath' => $usesComposerPath];
             if ($this->extensionInstallationStatus->isDbUpdateNeeded()) {
                 $result['confirmUpdate'] = true;

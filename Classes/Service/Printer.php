@@ -17,6 +17,8 @@ namespace EBT\ExtensionBuilder\Service;
 
 use EBT\ExtensionBuilder\Domain\Model\File;
 use EBT\ExtensionBuilder\Parser\NodeFactory;
+use PhpParser\Node;
+use PhpParser\Node\Stmt\Declare_;
 use PhpParser\PrettyPrinter\Standard;
 
 /**
@@ -46,7 +48,7 @@ class Printer extends Standard
     }
 
     /**
-     * @param array $stmts
+     * @param mixed $stmts
      * @return string
      */
     public function render($stmts)
@@ -62,15 +64,14 @@ class Printer extends Standard
      * @param bool $prependPHPTag
      * @return string
      */
-    public function renderFileObject(File $fileObject, $prependPHPTag = false)
+    public function renderFileObject(File $fileObject, $addDeclareStrictTypes = true)
     {
         $stmts = $this->nodeFactory->getFileStatements($fileObject);
         $resultingCode = $this->render($stmts);
-        if ($prependPHPTag) {
-            return '<?php' . LF . $resultingCode . LF;
+        if ($addDeclareStrictTypes) {
+            $resultingCode = 'declare(strict_types=1);' . LF . LF . $resultingCode;
         }
-
-        return $resultingCode . LF;
+        return '<?php' . LF . $resultingCode . LF;
     }
 
     /**
@@ -106,5 +107,16 @@ class Printer extends Standard
         }
 
         return $this->pImplode($nodes, ', ');
+    }
+
+    /**
+     * Overwrites the original function to remove one space after 'declare('
+     *
+     * @param Declare_ $node
+     * @return string
+     */
+    protected function pStmt_Declare(Declare_ $node) {
+        return 'declare(' . $this->pCommaSeparated($node->declares) . ')'
+               . (null !== $node->stmts ? ' {' . $this->pStmts($node->stmts) . $this->nl . '}' : ';');
     }
 }

@@ -305,24 +305,6 @@ class ExtensionValidator extends AbstractValidator
                 );
             }
         }
-        $switchableActionConfiguration = $plugin->getSwitchableControllerActions();
-        if (is_array($switchableActionConfiguration)) {
-            foreach ($switchableActionConfiguration as $switchableAction) {
-                $configuredActions = [];
-                foreach ($switchableAction['actions'] as $actions) {
-                    // Format should be: Controller->action
-                    [$controllerName, $actionName] = explode('->', $actions);
-                    $configuredActions[] = $actionName;
-                    $this->validateActionConfiguration(
-                        $controllerName,
-                        [$actionName],
-                        'plugin ' . $plugin->getName(),
-                        $extension
-                    );
-                }
-                $this->validateDependentActions($configuredActions, 'plugin ' . $plugin->getName());
-            }
-        }
     }
 
     /**
@@ -439,38 +421,6 @@ class ExtensionValidator extends AbstractValidator
                                 self::ERROR_MISCONFIGURATION
                             );
                         }
-                    }
-                }
-                if (!empty($pluginConfiguration['actions']['switchableActions'])) {
-                    $isValid = true;
-                    $lines = GeneralUtility::trimExplode(LF, $pluginConfiguration['actions']['switchableActions'],
-                        true);
-                    $firstLine = true;
-                    foreach ($lines as $line) {
-                        if ($firstLine) {
-                            // label for flexform select
-                            if (!preg_match('/^[a-zA-Z0-9_\-\s]*$/', $line)) {
-                                $isValid = false;
-                            }
-                            $firstLine = false;
-                        } else {
-                            $parts = GeneralUtility::trimExplode(';', $line, true);
-                            if (count($parts) < 1) {
-                                $isValid = false;
-                            }
-                            foreach ($parts as $part) {
-                                if (!empty($part) && count(GeneralUtility::trimExplode('->', $part, true)) != 2) {
-                                    $isValid = false;
-                                }
-                            }
-                            $firstLine = true;
-                        }
-                    }
-                    if (!$isValid) {
-                        $this->validationResult['warnings'][] = new ExtensionException(
-                            'Wrong format in configuration for switchable ControllerActions in plugin ' . $pluginName,
-                            self::ERROR_MISCONFIGURATION
-                        );
                     }
                 }
             }
@@ -647,18 +597,13 @@ class ExtensionValidator extends AbstractValidator
         $tableName = $domainObject->getMapToTable();
         $extensionPrefix = 'Tx_' . $domainObject->getExtension()->getExtensionName() . '_Domain_Model_';
         if (!empty($parentClass)) {
-            $classConfiguration = $this->configurationManager->getExtbaseClassConfiguration($parentClass);
-            if (!isset($classConfiguration['tableName'])) {
-                if (!$tableName) {
-                    $this->validationResult['errors'][] = new ExtensionException(
-                        'Mapping configuration error in domain object ' . $domainObject->getName() . ': ' . LF .
-                        'The mapping table could not be detected from Extbase Configuration. Please enter a table name',
-                        self::ERROR_MAPPING_NO_TABLE
-                    );
-                }
-            } else {
-                // get the table name from the parent class configuration
-                $tableName = $classConfiguration['tableName'];
+            $tableName = $this->configurationManager->getPersistenceTable($parentClass);
+            if (!$tableName) {
+                $this->validationResult['errors'][] = new ExtensionException(
+                    'Mapping configuration error in domain object ' . $domainObject->getName() . ': ' . LF .
+                    'The mapping table could not be detected from Extbase Configuration. Please enter a table name',
+                    self::ERROR_MAPPING_NO_TABLE
+                );
             }
 
             if (!class_exists($parentClass, true)) {

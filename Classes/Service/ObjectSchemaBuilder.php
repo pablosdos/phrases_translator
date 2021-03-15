@@ -171,15 +171,15 @@ class ObjectSchemaBuilder implements SingletonInterface
             }
             $relation->setForeignClassName($relationJsonConfiguration['foreignRelationClass']);
             $relation->setRelatedToExternalModel(true);
-            $extbaseClassConfiguration = $this->configurationManager->getExtbaseClassConfiguration(
+            $tableName = $this->configurationManager->getPersistenceTable(
                 $relationJsonConfiguration['foreignRelationClass']
             );
             if (!empty($relationJsonConfiguration['renderType'])) {
                 $relation->setRenderType($relationJsonConfiguration['renderType']);
             }
-            $foreignDatabaseTableName = $extbaseClassConfiguration['tableName'] ?? Tools::parseTableNameFromClassName(
-                    $relationJsonConfiguration['foreignRelationClass']
-                );
+            $foreignDatabaseTableName = $tableName ?? Tools::parseTableNameFromClassName(
+                $relationJsonConfiguration['foreignRelationClass']
+            );
             $relation->setForeignDatabaseTableName($foreignDatabaseTableName);
             if ($relation instanceof ZeroToManyRelation) {
                 $foreignKeyName = strtolower($domainObject->getName());
@@ -236,6 +236,9 @@ class ObjectSchemaBuilder implements SingletonInterface
         }
         if (isset($propertyJsonConfiguration['propertyIsExcludeField'])) {
             $property->setExcludeField($propertyJsonConfiguration['propertyIsExcludeField']);
+        }
+        if (isset($propertyJsonConfiguration['propertyIsL10nModeExclude'])) {
+            $property->setL10nModeExclude($propertyJsonConfiguration['propertyIsL10nModeExclude']);
         }
         if ($property->isFileReference() && !empty($propertyJsonConfiguration['maxItems'])) {
             $property->setMaxItems($propertyJsonConfiguration['maxItems']);
