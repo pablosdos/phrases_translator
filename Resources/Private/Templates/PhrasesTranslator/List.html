@@ -1,0 +1,14 @@
+<table border="1" cellspacing="1" cellpadding="5">
+	<tr>
+		<td>Product name</td>
+		<td>Product description</td>
+		<td>Quantity</td>
+	</tr>
+	<f:for each="{phrases}" as="phrase">
+		<tr>
+			<td align="top">{phrase.phraseGerman}</td>
+			<td align="top">{phrase.phraseSpanish}</td>
+			<td align="top">{phrase.phraseEnglish}</td>
+		</tr>
+	</f:for>
+</table>
