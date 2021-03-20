@@ -3,6 +3,10 @@
 $newObject = new Phrase;
 krexx($newObject); */
 
+use PablosDos\PhrasesTranslator\Domain\Model\Phrase;
+$newObject = new Phrase;
+krexx($newObject);
+
 defined('TYPO3_MODE') || die('Access denied.');
 
 call_user_func(
