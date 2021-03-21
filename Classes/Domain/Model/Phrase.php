@@ -12,44 +12,44 @@ class Phrase extends AbstractEntity
      *
      * @var string
      **/
-    protected $phraseGerman = '';
+    protected $phrasegerman = '';
 
     /**
      * The description of the product
      *
      * @var string
      **/
-    protected $phraseSpanish = '';
+    protected $phrasespanish = '';
 
     /**
      * The quantity in the store inventory
      *
      * @var string
      **/
-    protected $phraseEnglish = '';
+    protected $phraseenglish = '';
 
     /**
      * Phrase constructor.
      *
-     * @param string $phraseGerman
-     * @param string $phraseSpanish
-     * @param string $phraseEnglish
+     * @param string $phrasegerman
+     * @param string $phrasespanish
+     * @param string $phraseenglish
      */
-    public function __construct($phraseGerman = '', $phraseSpanish = '', $phraseEnglish = '')
+    public function __construct($phrasegerman = '', $phrasespanish = '', $phraseenglish = '')
     {
-        $this->setPhraseGerman($phraseGerman);
-        $this->setPhraseSpanish($phraseSpanish);
-        $this->setPhraseEnglish($phraseEnglish);
+        $this->setPhraseGerman($phrasegerman);
+        $this->setPhraseSpanish($phrasespanish);
+        $this->setPhraseEnglish($phraseenglish);
     }
 
     /**
      * Sets the name of the product
      *
-     * @param string $phraseGerman
+     * @param string $phrasegerman
      */
-    public function setPhraseGerman(string $phraseGerman)
+    public function setPhraseGerman(string $phrasegerman)
     {
-        $this->phraseGerman = $phraseGerman;
+        $this->phrasegerman = $phrasegerman;
     }
 
     /**
@@ -59,17 +59,18 @@ class Phrase extends AbstractEntity
      */
     public function getPhraseGerman()
     {
-        return $this->phraseGerman;
+        /* krexx($this->phrasegerman); */
+        return $this->phrasegerman;
     }
 
     /**
      * Sets the description of the product
      *
-     * @param string $phraseSpanish
+     * @param string $phrasespanish
      */
-    public function setPhraseSpanish(string $phraseSpanish)
+    public function setPhraseSpanish(string $phrasespanish)
     {
-        $this->phraseSpanish = $phraseSpanish;
+        $this->phrasespanish = $phrasespanish;
     }
 
     /**
@@ -79,17 +80,17 @@ class Phrase extends AbstractEntity
      */
     public function getPhraseSpanish()
     {
-        return $this->phraseSpanish;
+        return $this->phrasespanish;
     }
 
     /**
      * Sets the quantity in the store inventory of the product
      *
-     * @param string $phraseEnglish
+     * @param string $phraseenglish
      */
-    public function setPhraseEnglish(string $phraseEnglish)
+    public function setPhraseEnglish(string $phraseenglish)
     {
-        $this->phraseEnglish = $phraseEnglish;
+        $this->phraseenglish = $phraseenglish;
     }
 
     /**
@@ -99,7 +100,7 @@ class Phrase extends AbstractEntity
      */
     public function getPhraseEnglish()
     {
-        return $this->phraseEnglish;
+        return $this->phraseenglish;
     }
 
 }

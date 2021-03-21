@@ -3,9 +3,9 @@
 $newObject = new Phrase;
 krexx($newObject); */
 
-use PablosDos\PhrasesTranslator\Domain\Model\Phrase;
+/*use PablosDos\PhrasesTranslator\Domain\Model\Phrase;
 $newObject = new Phrase;
-krexx($newObject);
+krexx($newObject);*/
 
 defined('TYPO3_MODE') || die('Access denied.');
 

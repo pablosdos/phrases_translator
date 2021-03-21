@@ -1,8 +1,12 @@
+{namespace krexx=Brainworxx\Includekrexx\ViewHelpers}
+
+<f:comment><krexx:debug>{phrases}</krexx:debug></f:comment>
+
 <table border="1" cellspacing="1" cellpadding="5">
 	<tr>
-		<td>Product name</td>
-		<td>Product description</td>
-		<td>Quantity</td>
+		<td>Phrase German</td>
+		<td>Phrase Spanish</td>
+		<td>Phrase English</td>
 	</tr>
 	<f:for each="{phrases}" as="phrase">
 		<tr>
@@ -12,3 +16,4 @@
 		</tr>
 	</f:for>
 </table>
+

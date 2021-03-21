@@ -35,7 +35,9 @@ class PhrasesTranslatorController extends ActionController
      */
     public function listAction()
     {
+        /* krexx($this->phraseRepository->findAll()); */
         $phrases = $this->phraseRepository->findAll();
+        /* krexx($phrases); */
         $this->view->assign('phrases', $phrases);
     }
 }
